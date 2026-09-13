@@ -1,0 +1,355 @@
+/* ---------- Temas ---------- */
+:root,
+:root[data-theme="light"] {
+  --bg-app: #f4f4f6;
+  --bg-pane: #ffffff;
+  --bg-pane-alt: #fafafa;
+  --border: #e3e3e8;
+  --text: #1c1c1f;
+  --text-dim: #6f6f78;
+  --accent: #6c5ce7;
+  --accent-contrast: #ffffff;
+  --hover: #f0eefd;
+  --active: #e6e1fc;
+  --editor-bg: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #1b1b1f;
+  --bg-pane: #232328;
+  --bg-pane-alt: #202024;
+  --border: #333338;
+  --text: #eaeaef;
+  --text-dim: #9a9aa3;
+  --accent: #9b8cf2;
+  --accent-contrast: #16161a;
+  --hover: #2c2b38;
+  --active: #38355a;
+  --editor-bg: #232328;
+}
+
+:root[data-theme="oled"] {
+  --bg-app: #000000;
+  --bg-pane: #000000;
+  --bg-pane-alt: #0a0a0a;
+  --border: #1c1c1c;
+  --text: #f2f2f2;
+  --text-dim: #8a8a8a;
+  --accent: #9b8cf2;
+  --accent-contrast: #000000;
+  --hover: #111111;
+  --active: #1a1830;
+  --editor-bg: #000000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font-family: -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+  background: var(--bg-app);
+  color: var(--text);
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  display: grid;
+  grid-template-columns: 220px 300px 1fr;
+  height: 100vh;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.pane--bundles {
+  background: var(--bg-pane-alt);
+}
+
+.pane--notes {
+  background: var(--bg-pane);
+}
+
+.pane--editor {
+  border-right: none;
+  background: var(--editor-bg);
+}
+
+.pane__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+}
+
+.pane__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- Listas (bundles e notas) ---------- */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.list__item {
+  padding: 10px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  border-left: 3px solid var(--item-color, transparent);
+}
+
+.list__item:hover {
+  background: var(--hover);
+}
+
+.list__item--active {
+  background: var(--active);
+}
+
+.list__item-title {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list__item-preview {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.search-box {
+  padding: 0 14px 8px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-pane-alt);
+  color: var(--text);
+}
+
+/* ---------- Troca de tema ---------- */
+
+.theme-switch {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.theme-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.theme-dot--light {
+  background: #ffffff;
+}
+
+.theme-dot--dark {
+  background: #232328;
+}
+
+.theme-dot--oled {
+  background: #000000;
+}
+
+/* ---------- Editor ---------- */
+
+.editor-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 18px 24px;
+  overflow-y: auto;
+}
+
+.editor__title {
+  font-size: 22px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.editor__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--tag-color, var(--hover));
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.tag-chip--add {
+  background: transparent;
+  color: var(--text-dim);
+  border-style: dashed;
+}
+
+.tag-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--bg-pane);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  z-index: 10;
+  min-width: 160px;
+}
+
+.tag-picker__item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tag-picker__item:hover {
+  background: var(--hover);
+}
+
+.tag-picker__input {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-pane-alt);
+  color: var(--text);
+}
+
+.editor__toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.editor__toolbar button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-pane-alt);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.editor__toolbar button.is-active,
+.editor__toolbar button:hover {
+  background: var(--active);
+}
+
+.editor__content {
+  flex: 1;
+  min-height: 160px;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: "Cascadia Code", "Fira Code", monospace;
+  font-size: 13px;
+  background: var(--bg-pane-alt);
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.editor__preview {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  line-height: 1.55;
+}
+
+.editor__preview :first-child {
+  margin-top: 0;
+}
+
+.editor__preview code {
+  background: var(--hover);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.editor__preview pre code {
+  display: block;
+  padding: 10px;
+  overflow-x: auto;
+}

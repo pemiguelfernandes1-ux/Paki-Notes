@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paki Notes</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- Coluna 1: bundles -->
+      <aside class="pane pane--bundles">
+        <div class="pane__header">
+          <span class="pane__title">Bundles</span>
+          <button id="new-bundle-btn" class="icon-btn" title="Novo bundle">+</button>
+        </div>
+        <ul id="bundle-list" class="list"></ul>
+        <div class="theme-switch">
+          <button data-theme="light" class="theme-dot theme-dot--light" title="Claro"></button>
+          <button data-theme="dark" class="theme-dot theme-dot--dark" title="Escuro"></button>
+          <button data-theme="oled" class="theme-dot theme-dot--oled" title="OLED"></button>
+        </div>
+      </aside>
+
+      <!-- Coluna 2: notas do bundle selecionado -->
+      <section class="pane pane--notes">
+        <div class="pane__header">
+          <span id="notes-title" class="pane__title">Selecione um bundle</span>
+          <button id="new-note-btn" class="icon-btn" title="Nova nota" disabled>+</button>
+        </div>
+        <div class="search-box">
+          <input id="search-input" type="text" placeholder="Buscar em todas as notas..." />
+        </div>
+        <ul id="note-list" class="list"></ul>
+      </section>
+
+      <!-- Coluna 3: editor -->
+      <main class="pane pane--editor">
+        <div id="editor-empty" class="editor-empty">
+          <p>Selecione ou crie uma nota para começar a escrever.</p>
+        </div>
+
+        <div id="editor" class="editor" hidden>
+          <input id="note-title-input" class="editor__title" placeholder="Título da nota" />
+
+          <div class="editor__tags" id="editor-tags"></div>
+
+          <div class="editor__toolbar">
+            <button data-md="**" title="Negrito"><b>B</b></button>
+            <button data-md="_" title="Itálico"><i>I</i></button>
+            <button data-md="# " title="Título">H</button>
+            <button data-md="- [ ] " title="Checklist">☑</button>
+            <button id="pin-btn" title="Fixar nota">📌</button>
+          </div>
+
+          <textarea id="note-content-input" class="editor__content" placeholder="Escreva em Markdown..."></textarea>
+
+          <div class="editor__preview" id="editor-preview"></div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
