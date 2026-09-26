@@ -6,6 +6,8 @@ pub struct Bundle {
     pub id: String,
     pub name: String,
     pub color: Option<String>,
+    /// "list" (stacked list), "grid" (2-column note cards) or "board" (Kanban, coming later).
+    pub kind: String,
     pub archived: bool,
     pub created_at: String,
     pub updated_at: String,

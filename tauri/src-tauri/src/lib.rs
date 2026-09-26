@@ -26,6 +26,7 @@ pub fn run() {
             commands::get_note,
             commands::update_note,
             commands::delete_note,
+            commands::reorder_notes,
             commands::search_notes,
             commands::create_tag,
             commands::list_tags,

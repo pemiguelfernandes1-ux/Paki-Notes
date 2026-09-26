@@ -1,10 +1,13 @@
 // Espelham exatamente o JSON que o backend Rust serializa (serde não
 // converte para camelCase, então os nomes ficam em snake_case mesmo).
 
+export type BundleKind = "list" | "grid" | "board";
+
 export interface Bundle {
   id: string;
   name: string;
   color: string | null;
+  kind: BundleKind;
   archived: boolean;
   created_at: string;
   updated_at: string;

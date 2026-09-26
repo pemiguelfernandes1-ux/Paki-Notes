@@ -1,10 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Bundle, Note, NoteUpdate, Tag } from "./types";
+import type { Bundle, BundleKind, Note, NoteUpdate, Tag } from "./types";
 
 // ---------- Bundles ----------
 
-export function createBundle(name: string, color?: string | null): Promise<Bundle> {
-  return invoke("create_bundle", { name, color: color ?? null });
+export function createBundle(name: string, kind: BundleKind, color?: string | null): Promise<Bundle> {
+  return invoke("create_bundle", { name, kind, color: color ?? null });
 }
 
 export function listBundles(includeArchived = false): Promise<Bundle[]> {
@@ -47,6 +47,10 @@ export function deleteNote(id: string): Promise<void> {
 
 export function searchNotes(query: string): Promise<Note[]> {
   return invoke("search_notes", { query });
+}
+
+export function reorderNotes(bundleId: string, orderedIds: string[]): Promise<void> {
+  return invoke("reorder_notes", { bundleId, orderedIds });
 }
 
 // ---------- Tags ----------

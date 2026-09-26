@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS bundles (
     id          TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
     color       TEXT,
+    kind        TEXT NOT NULL DEFAULT 'list',
     archived    INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
@@ -64,5 +65,20 @@ pub fn init(app: &tauri::AppHandle) -> Connection {
     conn.pragma_update(None, "foreign_keys", true)
         .expect("failed to enable foreign keys");
     conn.execute_batch(SCHEMA).expect("failed to apply schema");
+    migrate(&conn);
     conn
+}
+
+/// Handles schema changes for databases created by earlier versions of the
+/// app, where `CREATE TABLE IF NOT EXISTS` alone wouldn't add new columns.
+fn migrate(conn: &Connection) {
+    let has_kind: bool = conn
+        .prepare("SELECT 1 FROM pragma_table_info('bundles') WHERE name = 'kind'")
+        .and_then(|mut stmt| stmt.exists([]))
+        .unwrap_or(false);
+
+    if !has_kind {
+        conn.execute_batch("ALTER TABLE bundles ADD COLUMN kind TEXT NOT NULL DEFAULT 'list';")
+            .expect("failed to migrate bundles.kind");
+    }
 }

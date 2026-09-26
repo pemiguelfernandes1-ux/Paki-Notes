@@ -1,17 +1,19 @@
+import "./fonts";
 import {
   createBundle,
   listBundles,
   createNote,
   listNotes,
   updateNote,
+  reorderNotes,
   searchNotes,
   createTag,
   listTags,
   assignTag,
   removeTag,
 } from "./api";
-import type { Bundle, Note, Tag } from "./types";
-import { renderMarkdown } from "./markdown";
+import type { Bundle, BundleKind, Note, Tag } from "./types";
+import { LiveMarkdownEditor } from "./editor";
 
 // ----- estado -----
 
@@ -22,7 +24,11 @@ let currentBundleId: string | null = null;
 let currentNote: Note | null = null;
 let searchActive = false;
 let lastSearchResults: Note[] = [];
+let sortMode: "manual" | "newest" | "oldest" = "manual";
+let draggedNoteId: string | null = null;
+let selectedKind: BundleKind = "list";
 
+let liveEditor: LiveMarkdownEditor | null = null;
 let saveTimer: number | undefined;
 let searchDebounce: number | undefined;
 
@@ -34,20 +40,22 @@ let notesTitleEl: HTMLElement;
 let newNoteBtn: HTMLButtonElement;
 let noteListEl: HTMLUListElement;
 let searchInputEl: HTMLInputElement;
+let sortButtons: NodeListOf<HTMLButtonElement>;
+
+let homeEmptyEl: HTMLElement;
+let homeCreateBundleBtn: HTMLButtonElement;
 let editorEmptyEl: HTMLElement;
 let editorEl: HTMLElement;
 let titleInputEl: HTMLInputElement;
-let contentInputEl: HTMLTextAreaElement;
-let previewEl: HTMLElement;
+let cmHostEl: HTMLElement;
 let tagsBarEl: HTMLElement;
 let pinBtn: HTMLButtonElement;
 
-const THEME_KEY = "paki-notes:theme";
-
-function applyTheme(theme: string) {
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem(THEME_KEY, theme);
-}
+let bundleModalEl: HTMLElement;
+let bundleNameInputEl: HTMLInputElement;
+let bundleModalCancelBtn: HTMLButtonElement;
+let bundleModalCreateBtn: HTMLButtonElement;
+let kindCards: NodeListOf<HTMLButtonElement>;
 
 // ----- bundles -----
 
@@ -73,36 +81,97 @@ async function selectBundle(id: string) {
   searchActive = false;
   searchInputEl.value = "";
   renderBundleList();
-  newNoteBtn.disabled = false;
+  homeEmptyEl.hidden = true;
 
   const bundle = bundles.find((b) => b.id === id);
   notesTitleEl.textContent = bundle?.name ?? "";
 
+  if (bundle?.kind === "board") {
+    newNoteBtn.disabled = true;
+    noteListEl.classList.remove("note-list--grid");
+    noteListEl.innerHTML = '<li class="list__empty-hint">Quadros (Kanban) chega na próxima etapa 🙂</li>';
+    notesInCurrentBundle = [];
+    closeEditor();
+    return;
+  }
+
+  newNoteBtn.disabled = false;
   [notesInCurrentBundle, tagsInCurrentBundle] = await Promise.all([
     listNotes(id),
     listTags(id),
   ]);
-  renderNoteList(notesInCurrentBundle);
+  setSortMode("manual");
   closeEditor();
 }
 
-async function createBundlePrompt() {
-  const name = window.prompt("Nome do novo bundle:");
-  if (!name) return;
-  const bundle = await createBundle(name);
+// ----- modal: criar bundle -----
+
+function openBundleModal() {
+  bundleNameInputEl.value = "";
+  selectedKind = "list";
+  updateKindCardsUI();
+  bundleModalEl.hidden = false;
+  bundleNameInputEl.focus();
+}
+
+function closeBundleModal() {
+  bundleModalEl.hidden = true;
+}
+
+function updateKindCardsUI() {
+  kindCards.forEach((card) => {
+    card.classList.toggle("is-selected", card.dataset.kind === selectedKind);
+  });
+}
+
+async function confirmCreateBundle() {
+  const name = bundleNameInputEl.value.trim();
+  if (!name) {
+    bundleNameInputEl.focus();
+    return;
+  }
+  const bundle = await createBundle(name, selectedKind);
   bundles.push(bundle);
   bundles.sort((a, b) => a.name.localeCompare(b.name));
   renderBundleList();
+  closeBundleModal();
   await selectBundle(bundle.id);
 }
 
 // ----- notas -----
 
+function applySortMode(notes: Note[]): Note[] {
+  if (sortMode === "manual") return notes;
+  const sorted = [...notes];
+  sorted.sort((a, b) => {
+    const cmp = a.created_at.localeCompare(b.created_at);
+    return sortMode === "newest" ? -cmp : cmp;
+  });
+  return sorted;
+}
+
+function getDisplayedNotes(): Note[] {
+  const base = searchActive ? lastSearchResults : notesInCurrentBundle;
+  return applySortMode(base);
+}
+
+function setSortMode(mode: "manual" | "newest" | "oldest") {
+  sortMode = mode;
+  sortButtons.forEach((btn) => btn.classList.toggle("is-active", btn.dataset.sort === mode));
+  renderNoteList(getDisplayedNotes());
+}
+
 function renderNoteList(notes: Note[]) {
+  const bundle = bundles.find((b) => b.id === currentBundleId);
+  noteListEl.classList.toggle("note-list--grid", !searchActive && bundle?.kind === "grid");
   noteListEl.innerHTML = "";
+
+  const dragEnabled = sortMode === "manual" && !searchActive;
+
   for (const note of notes) {
     const li = document.createElement("li");
     li.className = "list__item" + (note.id === currentNote?.id ? " list__item--active" : "");
+    li.draggable = dragEnabled;
 
     const title = document.createElement("div");
     title.className = "list__item-title";
@@ -110,11 +179,38 @@ function renderNoteList(notes: Note[]) {
 
     const preview = document.createElement("div");
     preview.className = "list__item-preview";
-    preview.textContent = note.content.slice(0, 80).replace(/\n/g, " ");
+    preview.textContent = note.content.slice(0, 120).replace(/\n/g, " ");
 
     li.appendChild(title);
     li.appendChild(preview);
     li.addEventListener("click", () => openNote(note));
+
+    if (dragEnabled) {
+      li.addEventListener("dragstart", () => {
+        draggedNoteId = note.id;
+        li.classList.add("is-dragging");
+      });
+      li.addEventListener("dragend", () => {
+        draggedNoteId = null;
+        li.classList.remove("is-dragging");
+      });
+      li.addEventListener("dragover", (e) => {
+        if (draggedNoteId && draggedNoteId !== note.id) e.preventDefault();
+      });
+      li.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        if (!draggedNoteId || draggedNoteId === note.id || !currentBundleId) return;
+        const list = notesInCurrentBundle;
+        const fromIdx = list.findIndex((n) => n.id === draggedNoteId);
+        const toIdx = list.findIndex((n) => n.id === note.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = list.splice(fromIdx, 1);
+        list.splice(toIdx, 0, moved);
+        renderNoteList(getDisplayedNotes());
+        await reorderNotes(currentBundleId, list.map((n) => n.id));
+      });
+    }
+
     noteListEl.appendChild(li);
   }
 }
@@ -123,19 +219,29 @@ async function createNotePrompt() {
   if (!currentBundleId) return;
   const note = await createNote(currentBundleId, "", "");
   notesInCurrentBundle.unshift(note);
-  renderNoteList(notesInCurrentBundle);
+  renderNoteList(getDisplayedNotes());
   openNote(note);
 }
 
 function openNote(note: Note) {
   currentNote = note;
-  renderNoteList(searchActive ? lastSearchResults : notesInCurrentBundle);
+  renderNoteList(getDisplayedNotes());
 
+  homeEmptyEl.hidden = true;
   editorEmptyEl.hidden = true;
   editorEl.hidden = false;
   titleInputEl.value = note.title;
-  contentInputEl.value = note.content;
-  previewEl.innerHTML = renderMarkdown(note.content);
+
+  if (!liveEditor) {
+    liveEditor = new LiveMarkdownEditor({
+      parent: cmHostEl,
+      doc: note.content,
+      onChange: () => scheduleSave(),
+    });
+  } else {
+    liveEditor.setContent(note.content);
+  }
+
   renderTagsBar();
   updatePinButton();
   titleInputEl.focus();
@@ -144,6 +250,7 @@ function openNote(note: Note) {
 function closeEditor() {
   currentNote = null;
   editorEl.hidden = true;
+  homeEmptyEl.hidden = true;
   editorEmptyEl.hidden = false;
 }
 
@@ -158,17 +265,17 @@ function scheduleSave() {
 }
 
 async function saveCurrentNote() {
-  if (!currentNote) return;
+  if (!currentNote || !liveEditor) return;
   const noteId = currentNote.id;
   const updated = await updateNote(noteId, {
     title: titleInputEl.value,
-    content: contentInputEl.value,
+    content: liveEditor.getContent(),
   });
   if (!currentNote || currentNote.id !== noteId) return; // usuário trocou de nota enquanto salvava
   currentNote = { ...updated, tags: currentNote.tags };
   const idx = notesInCurrentBundle.findIndex((n) => n.id === noteId);
   if (idx !== -1) notesInCurrentBundle[idx] = currentNote;
-  renderNoteList(searchActive ? lastSearchResults : notesInCurrentBundle);
+  renderNoteList(getDisplayedNotes());
 }
 
 async function togglePin() {
@@ -177,36 +284,12 @@ async function togglePin() {
   currentNote = { ...currentNote, pinned: updated.pinned };
   updatePinButton();
   notesInCurrentBundle = await listNotes(currentBundleId);
-  renderNoteList(notesInCurrentBundle);
+  renderNoteList(getDisplayedNotes());
 }
 
-function wrapSelection(marker: string) {
-  const el = contentInputEl;
-  const start = el.selectionStart ?? 0;
-  const end = el.selectionEnd ?? 0;
-  const before = el.value.slice(0, start);
-  const selected = el.value.slice(start, end);
-  const after = el.value.slice(end);
-
-  const isLinePrefix = marker.endsWith(" ");
-  let newValue: string;
-  let cursorStart: number;
-  let cursorEnd: number;
-
-  if (isLinePrefix) {
-    newValue = before + marker + selected + after;
-    cursorStart = start + marker.length;
-    cursorEnd = end + marker.length;
-  } else {
-    newValue = before + marker + selected + marker + after;
-    cursorStart = start + marker.length;
-    cursorEnd = end + marker.length;
-  }
-
-  el.value = newValue;
-  el.focus();
-  el.setSelectionRange(cursorStart, cursorEnd);
-  previewEl.innerHTML = renderMarkdown(el.value);
+function applyMarkdownMarker(marker: string) {
+  if (!liveEditor) return;
+  liveEditor.wrapSelection(marker);
   scheduleSave();
 }
 
@@ -296,13 +379,13 @@ function onSearchInput() {
   const query = searchInputEl.value.trim();
   if (!query) {
     searchActive = false;
-    renderNoteList(notesInCurrentBundle);
+    renderNoteList(getDisplayedNotes());
     return;
   }
   searchDebounce = window.setTimeout(async () => {
     searchActive = true;
     lastSearchResults = await searchNotes(query);
-    renderNoteList(lastSearchResults);
+    renderNoteList(getDisplayedNotes());
   }, 250);
 }
 
@@ -315,34 +398,55 @@ window.addEventListener("DOMContentLoaded", () => {
   newNoteBtn = document.querySelector("#new-note-btn")!;
   noteListEl = document.querySelector("#note-list")!;
   searchInputEl = document.querySelector("#search-input")!;
+  sortButtons = document.querySelectorAll("#sort-toggle .sort-btn");
+
+  homeEmptyEl = document.querySelector("#home-empty")!;
+  homeCreateBundleBtn = document.querySelector("#home-create-bundle-btn")!;
   editorEmptyEl = document.querySelector("#editor-empty")!;
   editorEl = document.querySelector("#editor")!;
   titleInputEl = document.querySelector("#note-title-input")!;
-  contentInputEl = document.querySelector("#note-content-input")!;
-  previewEl = document.querySelector("#editor-preview")!;
+  cmHostEl = document.querySelector("#cm-editor-host")!;
   tagsBarEl = document.querySelector("#editor-tags")!;
   pinBtn = document.querySelector("#pin-btn")!;
 
-  const savedTheme = localStorage.getItem(THEME_KEY) ?? "light";
-  applyTheme(savedTheme);
-  document.querySelectorAll<HTMLButtonElement>(".theme-dot").forEach((btn) => {
-    btn.addEventListener("click", () => applyTheme(btn.dataset.theme!));
+  bundleModalEl = document.querySelector("#bundle-modal")!;
+  bundleNameInputEl = document.querySelector("#bundle-name-input")!;
+  bundleModalCancelBtn = document.querySelector("#bundle-modal-cancel")!;
+  bundleModalCreateBtn = document.querySelector("#bundle-modal-create")!;
+  kindCards = document.querySelectorAll(".kind-card");
+
+  newBundleBtn.addEventListener("click", openBundleModal);
+  homeCreateBundleBtn.addEventListener("click", openBundleModal);
+  bundleModalCancelBtn.addEventListener("click", closeBundleModal);
+  bundleModalEl.addEventListener("click", (e) => {
+    if (e.target === bundleModalEl) closeBundleModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !bundleModalEl.hidden) closeBundleModal();
+  });
+  bundleNameInputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") confirmCreateBundle();
+  });
+  bundleModalCreateBtn.addEventListener("click", confirmCreateBundle);
+  kindCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      if (card.dataset.disabled === "true") return;
+      selectedKind = card.dataset.kind as BundleKind;
+      updateKindCardsUI();
+    });
   });
 
-  newBundleBtn.addEventListener("click", createBundlePrompt);
   newNoteBtn.addEventListener("click", createNotePrompt);
   searchInputEl.addEventListener("input", onSearchInput);
-
-  titleInputEl.addEventListener("input", scheduleSave);
-  contentInputEl.addEventListener("input", () => {
-    previewEl.innerHTML = renderMarkdown(contentInputEl.value);
-    scheduleSave();
+  sortButtons.forEach((btn) => {
+    btn.addEventListener("click", () => setSortMode(btn.dataset.sort as "manual" | "newest" | "oldest"));
   });
 
+  titleInputEl.addEventListener("input", scheduleSave);
   pinBtn.addEventListener("click", togglePin);
 
   document.querySelectorAll<HTMLButtonElement>(".editor__toolbar [data-md]").forEach((btn) => {
-    btn.addEventListener("click", () => wrapSelection(btn.dataset.md!));
+    btn.addEventListener("click", () => applyMarkdownMarker(btn.dataset.md!));
   });
 
   loadBundles();

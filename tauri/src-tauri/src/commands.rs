@@ -59,14 +59,19 @@ const NOTE_COLUMNS: &str =
 // ---------- Bundles ----------
 
 #[tauri::command]
-pub fn create_bundle(db: State<Db>, name: String, color: Option<String>) -> Result<Bundle, String> {
+pub fn create_bundle(
+    db: State<Db>,
+    name: String,
+    color: Option<String>,
+    kind: String,
+) -> Result<Bundle, String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
     let id = new_id();
     let ts = now();
     conn.execute(
-        "INSERT INTO bundles (id, name, color, archived, created_at, updated_at)
-         VALUES (?1, ?2, ?3, 0, ?4, ?4)",
-        params![id, name, color, ts],
+        "INSERT INTO bundles (id, name, color, kind, archived, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, 0, ?5, ?5)",
+        params![id, name, color, kind, ts],
     )
     .map_err(|e| e.to_string())?;
 
@@ -74,6 +79,7 @@ pub fn create_bundle(db: State<Db>, name: String, color: Option<String>) -> Resu
         id,
         name,
         color,
+        kind,
         archived: false,
         created_at: ts.clone(),
         updated_at: ts,
@@ -84,9 +90,9 @@ pub fn create_bundle(db: State<Db>, name: String, color: Option<String>) -> Resu
 pub fn list_bundles(db: State<Db>, include_archived: bool) -> Result<Vec<Bundle>, String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
     let sql = if include_archived {
-        "SELECT id, name, color, archived, created_at, updated_at FROM bundles ORDER BY name"
+        "SELECT id, name, color, kind, archived, created_at, updated_at FROM bundles ORDER BY name"
     } else {
-        "SELECT id, name, color, archived, created_at, updated_at FROM bundles WHERE archived = 0 ORDER BY name"
+        "SELECT id, name, color, kind, archived, created_at, updated_at FROM bundles WHERE archived = 0 ORDER BY name"
     };
     let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
     let bundles = stmt
@@ -95,9 +101,10 @@ pub fn list_bundles(db: State<Db>, include_archived: bool) -> Result<Vec<Bundle>
                 id: row.get(0)?,
                 name: row.get(1)?,
                 color: row.get(2)?,
-                archived: row.get::<_, i64>(3)? != 0,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
+                kind: row.get(3)?,
+                archived: row.get::<_, i64>(4)? != 0,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -240,6 +247,25 @@ pub fn delete_note(db: State<Db>, id: String) -> Result<(), String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM notes WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Aplica uma nova ordem manual às notas de um bundle. `ordered_ids` deve
+/// conter os ids de todas as notas do bundle, na ordem desejada (posição 0
+/// primeiro). Usado depois de um drag-and-drop na lista/grade.
+#[tauri::command]
+pub fn reorder_notes(db: State<Db>, bundle_id: String, ordered_ids: Vec<String>) -> Result<(), String> {
+    let mut conn = db.0.lock().map_err(|e| e.to_string())?;
+    let ts = now();
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+    for (index, note_id) in ordered_ids.iter().enumerate() {
+        tx.execute(
+            "UPDATE notes SET position = ?1, updated_at = ?2 WHERE id = ?3 AND bundle_id = ?4",
+            params![index as i64, ts, note_id, bundle_id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    tx.commit().map_err(|e| e.to_string())?;
     Ok(())
 }
 

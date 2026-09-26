@@ -17,11 +17,6 @@
           <button id="new-bundle-btn" class="icon-btn" title="Novo bundle">+</button>
         </div>
         <ul id="bundle-list" class="list"></ul>
-        <div class="theme-switch">
-          <button data-theme="light" class="theme-dot theme-dot--light" title="Claro"></button>
-          <button data-theme="dark" class="theme-dot theme-dot--dark" title="Escuro"></button>
-          <button data-theme="oled" class="theme-dot theme-dot--oled" title="OLED"></button>
-        </div>
       </aside>
 
       <!-- Coluna 2: notas do bundle selecionado -->
@@ -33,15 +28,29 @@
         <div class="search-box">
           <input id="search-input" type="text" placeholder="Buscar em todas as notas..." />
         </div>
+        <div class="sort-toggle" id="sort-toggle">
+          <button data-sort="manual" class="sort-btn is-active" title="Ordem manual">Manual</button>
+          <button data-sort="newest" class="sort-btn" title="Mais novo primeiro">Mais novo</button>
+          <button data-sort="oldest" class="sort-btn" title="Mais velho primeiro">Mais velho</button>
+        </div>
         <ul id="note-list" class="list"></ul>
       </section>
 
       <!-- Coluna 3: editor -->
       <main class="pane pane--editor">
-        <div id="editor-empty" class="editor-empty">
+        <!-- Tela inicial: nenhum bundle selecionado ainda -->
+        <div id="home-empty" class="home">
+          <h1 class="home__title">Paki Notes</h1>
+          <p class="home__tagline">Suas notas, do seu jeito.</p>
+          <button id="home-create-bundle-btn" class="btn btn--primary">Criar Bundle</button>
+        </div>
+
+        <!-- Bundle selecionado, nenhuma nota aberta -->
+        <div id="editor-empty" class="editor-empty" hidden>
           <p>Selecione ou crie uma nota para começar a escrever.</p>
         </div>
 
+        <!-- Nota aberta -->
         <div id="editor" class="editor" hidden>
           <input id="note-title-input" class="editor__title" placeholder="Título da nota" />
 
@@ -50,16 +59,46 @@
           <div class="editor__toolbar">
             <button data-md="**" title="Negrito"><b>B</b></button>
             <button data-md="_" title="Itálico"><i>I</i></button>
+            <button data-md="~~" title="Riscado"><s>S</s></button>
             <button data-md="# " title="Título">H</button>
             <button data-md="- [ ] " title="Checklist">☑</button>
             <button id="pin-btn" title="Fixar nota">📌</button>
           </div>
 
-          <textarea id="note-content-input" class="editor__content" placeholder="Escreva em Markdown..."></textarea>
-
-          <div class="editor__preview" id="editor-preview"></div>
+          <div id="cm-editor-host" class="editor__content"></div>
         </div>
       </main>
+    </div>
+
+    <!-- Modal: criar bundle -->
+    <div id="bundle-modal" class="modal-overlay" hidden>
+      <div class="modal">
+        <h2 class="modal__title">Criar Bundle</h2>
+        <input id="bundle-name-input" class="modal__input" placeholder="Nome do bundle" maxlength="60" />
+
+        <div class="kind-options">
+          <button class="kind-card is-selected" data-kind="list">
+            <span class="kind-card__icon">☰</span>
+            <span class="kind-card__name">Lista</span>
+            <span class="kind-card__desc">Notas empilhadas, uma embaixo da outra</span>
+          </button>
+          <button class="kind-card" data-kind="grid">
+            <span class="kind-card__icon">▦</span>
+            <span class="kind-card__name">Notas</span>
+            <span class="kind-card__desc">Grade de duas colunas</span>
+          </button>
+          <button class="kind-card kind-card--disabled" data-kind="board" data-disabled="true">
+            <span class="kind-card__icon">◫</span>
+            <span class="kind-card__name">Quadros</span>
+            <span class="kind-card__desc">Kanban — em breve</span>
+          </button>
+        </div>
+
+        <div class="modal__actions">
+          <button id="bundle-modal-cancel" class="btn btn--ghost">Cancelar</button>
+          <button id="bundle-modal-create" class="btn btn--primary">Criar</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

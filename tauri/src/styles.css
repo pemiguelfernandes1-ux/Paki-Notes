@@ -1,45 +1,19 @@
-/* ---------- Temas ---------- */
-:root,
-:root[data-theme="light"] {
-  --bg-app: #f4f4f6;
-  --bg-pane: #ffffff;
-  --bg-pane-alt: #fafafa;
-  --border: #e3e3e8;
-  --text: #1c1c1f;
-  --text-dim: #6f6f78;
-  --accent: #6c5ce7;
-  --accent-contrast: #ffffff;
-  --hover: #f0eefd;
-  --active: #e6e1fc;
-  --editor-bg: #ffffff;
-}
+/* ---------- Tema único (escuro) ---------- */
+:root {
+  --bg-app: #0b0b0d;
+  --bg-pane: #131316;
+  --bg-pane-alt: #18181c;
+  --border: #262629;
+  --text: #ededf0;
+  --text-dim: #8d8d97;
+  --accent: #a897f5;
+  --accent-contrast: #14121f;
+  --hover: #201f2c;
+  --active: #2b2740;
+  --editor-bg: #131316;
 
-:root[data-theme="dark"] {
-  --bg-app: #1b1b1f;
-  --bg-pane: #232328;
-  --bg-pane-alt: #202024;
-  --border: #333338;
-  --text: #eaeaef;
-  --text-dim: #9a9aa3;
-  --accent: #9b8cf2;
-  --accent-contrast: #16161a;
-  --hover: #2c2b38;
-  --active: #38355a;
-  --editor-bg: #232328;
-}
-
-:root[data-theme="oled"] {
-  --bg-app: #000000;
-  --bg-pane: #000000;
-  --bg-pane-alt: #0a0a0a;
-  --border: #1c1c1c;
-  --text: #f2f2f2;
-  --text-dim: #8a8a8a;
-  --accent: #9b8cf2;
-  --accent-contrast: #000000;
-  --hover: #111111;
-  --active: #1a1830;
-  --editor-bg: #000000;
+  --font-display: "Unbounded", "Segoe UI", sans-serif;
+  --font-body: "Manrope", -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 * {
@@ -50,12 +24,13 @@ html,
 body {
   margin: 0;
   height: 100%;
-  font-family: -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg-app);
   color: var(--text);
 }
 
-button {
+button,
+input {
   font-family: inherit;
 }
 
@@ -95,11 +70,12 @@ button {
 }
 
 .pane__title {
+  font-family: var(--font-display);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
 .icon-btn {
@@ -119,12 +95,36 @@ button {
   cursor: default;
 }
 
+/* ---------- Botões genéricos ---------- */
+
+.btn {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--bg-pane-alt);
+  color: var(--text);
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
 /* ---------- Listas (bundles e notas) ---------- */
 
 .list {
   list-style: none;
   margin: 0;
-  padding: 0 8px;
+  padding: 0 8px 8px;
   overflow-y: auto;
   flex: 1;
 }
@@ -145,9 +145,13 @@ button {
   background: var(--active);
 }
 
+.list__item.is-dragging {
+  opacity: 0.4;
+}
+
 .list__item-title {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -160,6 +164,28 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
+}
+
+.list__empty-hint {
+  padding: 16px 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* grade de 2 colunas pra bundles do tipo "Notas" */
+.note-list--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  align-content: start;
+}
+
+.note-list--grid .list__item {
+  border-left: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 92px;
 }
 
 .search-box {
@@ -175,33 +201,146 @@ button {
   color: var(--text);
 }
 
-/* ---------- Troca de tema ---------- */
+/* ---------- Ordenação ---------- */
 
-.theme-switch {
+.sort-toggle {
   display: flex;
-  gap: 8px;
-  padding: 12px 14px;
-  border-top: 1px solid var(--border);
+  gap: 4px;
+  padding: 0 14px 10px;
 }
 
-.theme-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+.sort-btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 5px 6px;
+  border-radius: 6px;
   border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
   cursor: pointer;
 }
 
-.theme-dot--light {
-  background: #ffffff;
+.sort-btn.is-active {
+  background: var(--active);
+  color: var(--text);
 }
 
-.theme-dot--dark {
-  background: #232328;
+/* ---------- Tela inicial ---------- */
+
+.home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 20px;
 }
 
-.theme-dot--oled {
-  background: #000000;
+.home__title {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.home__tagline {
+  color: var(--text-dim);
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+/* ---------- Modal: criar bundle ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-pane);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+}
+
+.modal__title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 0 0 16px;
+}
+
+.modal__input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-pane-alt);
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.kind-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.kind-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-pane-alt);
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+}
+
+.kind-card__icon {
+  font-size: 18px;
+}
+
+.kind-card__name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kind-card__desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+
+.kind-card.is-selected {
+  border-color: var(--accent);
+  background: var(--active);
+}
+
+.kind-card--disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 /* ---------- Editor ---------- */
@@ -222,10 +361,11 @@ button {
   flex-direction: column;
   height: 100%;
   padding: 18px 24px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .editor__title {
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 600;
   border: none;
@@ -233,6 +373,7 @@ button {
   background: transparent;
   color: var(--text);
   margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .editor__tags {
@@ -241,6 +382,7 @@ button {
   gap: 6px;
   margin-bottom: 12px;
   position: relative;
+  flex-shrink: 0;
 }
 
 .tag-chip {
@@ -269,7 +411,7 @@ button {
   background: var(--bg-pane);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   padding: 6px;
   z-index: 10;
   min-width: 160px;
@@ -300,6 +442,7 @@ button {
   display: flex;
   gap: 6px;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .editor__toolbar button {
@@ -319,37 +462,76 @@ button {
 
 .editor__content {
   flex: 1;
-  min-height: 160px;
-  resize: none;
+  min-height: 0;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
-  font-family: "Cascadia Code", "Fira Code", monospace;
-  font-size: 13px;
   background: var(--bg-pane-alt);
-  color: var(--text);
-  margin-bottom: 16px;
 }
 
-.editor__preview {
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-  line-height: 1.55;
+/* CodeMirror precisa herdar a altura do container pra rolar certinho */
+.editor__content .cm-editor {
+  height: 100%;
 }
 
-.editor__preview :first-child {
-  margin-top: 0;
+/* ---------- Decorações do editor ao vivo (ver src/editor.ts) ---------- */
+
+.cm-md-marker {
+  opacity: 0.4;
+  color: var(--text-dim);
 }
 
-.editor__preview code {
+.cm-md-bold {
+  font-weight: 700;
+}
+
+.cm-md-italic {
+  font-style: italic;
+}
+
+.cm-md-strike {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.cm-md-code {
+  font-family: "Cascadia Code", "Fira Code", monospace;
   background: var(--hover);
-  padding: 2px 5px;
   border-radius: 4px;
-  font-size: 0.9em;
+  padding: 0 2px;
 }
 
-.editor__preview pre code {
-  display: block;
-  padding: 10px;
-  overflow-x: auto;
+.cm-md-h1 {
+  font-family: var(--font-display);
+  font-size: 1.6em;
+  font-weight: 700;
+}
+
+.cm-md-h2 {
+  font-family: var(--font-display);
+  font-size: 1.35em;
+  font-weight: 700;
+}
+
+.cm-md-h3 {
+  font-family: var(--font-display);
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.cm-md-bullet {
+  padding-left: 4px;
+}
+
+.cm-md-quote {
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.cm-md-checklist--done {
+  text-decoration: line-through;
+  color: var(--text-dim);
 }
